@@ -3,7 +3,7 @@
     return;
   }
 
-  const scriptVersion = "1.4.0";
+  const scriptVersion = "1.4.1";
   const oldResponsiveStorageKeys = [
     "NElement:responsive-preview",
     "NElement:responsive-preview:v2",
@@ -407,8 +407,7 @@
         grid-template-columns: 1fr;
       }
 
-      .sei-size-form,
-      .sei-resize-grid {
+      .sei-size-form {
         grid-template-columns: 1fr;
       }
     }
