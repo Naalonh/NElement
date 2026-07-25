@@ -71,7 +71,8 @@ The panel includes common size presets:
 
 - Mobile: `390 x 844`
 - Small mobile: `360 x 740`
-- Tablet: `768 x 1024`
+- Tablet landscape: `1024 x 768`
+- Tablet portrait: `768 x 1024`
 - Laptop: `1280 x 800`
 - Desktop: `1440 x 900`
 - Wide: `1920 x 1080`

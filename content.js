@@ -1,6 +1,14 @@
 (() => {
-  const scriptVersion = "1.3.2";
-  const responsiveStorageKey = "NElement:responsive-preview";
+  if (window.top !== window) {
+    return;
+  }
+
+  const scriptVersion = "1.3.6";
+  const responsiveStorageKey = "NElement:responsive-preview:v3";
+  const oldResponsiveStorageKeys = [
+    "NElement:responsive-preview",
+    "NElement:responsive-preview:v2"
+  ];
 
   if (window.__selectElementInspector?.loaded && window.__selectElementInspector.version === scriptVersion) {
     return;
@@ -17,6 +25,7 @@
     resizerPanel: null,
     responsiveStage: null,
     responsiveFrame: null,
+    responsiveSize: null,
     lastElement: null,
     capturing: false
   };
@@ -122,6 +131,27 @@
       overflow: hidden;
       background: #ffffff;
       box-shadow: 0 22px 70px rgba(0, 27, 61, 0.28);
+    }
+
+    .sei-responsive-viewport {
+      overflow: auto;
+      background: #ffffff;
+      scrollbar-width: thin;
+      scrollbar-color: #13c4c8 #edf4f8;
+    }
+
+    .sei-responsive-viewport::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .sei-responsive-viewport::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: #13c4c8;
+    }
+
+    .sei-responsive-viewport::-webkit-scrollbar-track {
+      background: #edf4f8;
     }
 
     .sei-responsive-shell {
@@ -488,6 +518,7 @@
   state.start = startPicker;
 
   document.addEventListener("keydown", onGlobalKeyDown, true);
+  clearOldResponsivePreviewState();
   restoreResponsivePreview();
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -795,7 +826,8 @@
     const presets = [
       { label: "Mobile", size: "390 x 844", width: 390, height: 844 },
       { label: "Small mobile", size: "360 x 740", width: 360, height: 740 },
-      { label: "Tablet", size: "768 x 1024", width: 768, height: 1024 },
+      { label: "Tablet landscape", size: "1024 x 768", width: 1024, height: 768 },
+      { label: "Tablet portrait", size: "768 x 1024", width: 768, height: 1024 },
       { label: "Laptop", size: "1280 x 800", width: 1280, height: 800 },
       { label: "Desktop", size: "1440 x 900", width: 1440, height: 900 },
       { label: "Wide", size: "1920 x 1080", width: 1920, height: 1080 }
@@ -892,33 +924,84 @@
 
   function showResponsivePreview(width, height) {
     const stage = ensureResponsiveStage();
-    const shell = stage.querySelector(".sei-responsive-shell");
-    const device = stage.querySelector(".sei-responsive-device");
-    const frame = stage.querySelector(".sei-responsive-frame");
-    const sizeLabel = stage.querySelector("[data-responsive-size]");
     const constrainedWidth = Math.min(width, 2560);
     const constrainedHeight = Math.min(height, 1800);
+
+    state.responsiveSize = {
+      width: constrainedWidth,
+      height: constrainedHeight,
+      displayWidth: constrainedWidth
+    };
+
+    applyResponsiveFrameSize();
+    saveResponsivePreview(constrainedWidth, constrainedHeight);
+    measureResponsiveContentWidth();
+  }
+
+  function applyResponsiveFrameSize() {
+    if (!state.responsiveStage || !state.responsiveSize) {
+      return;
+    }
+
+    const { width, height, displayWidth } = state.responsiveSize;
+    const stage = state.responsiveStage;
+    const shell = stage.querySelector(".sei-responsive-shell");
+    const device = stage.querySelector(".sei-responsive-device");
+    const viewport = stage.querySelector(".sei-responsive-viewport");
+    const frame = stage.querySelector(".sei-responsive-frame");
+    const sizeLabel = stage.querySelector("[data-responsive-size]");
     const frameBarHeight = 34;
     const stagePadding = 56;
     const availableWidth = Math.max(window.innerWidth - stagePadding, 320);
     const availableHeight = Math.max(window.innerHeight - stagePadding, 320);
     const scale = Math.min(
       1,
-      availableWidth / constrainedWidth,
-      availableHeight / (constrainedHeight + frameBarHeight)
+      availableWidth / displayWidth,
+      availableHeight / (height + frameBarHeight)
     );
 
-    shell.style.width = `${Math.round(constrainedWidth * scale)}px`;
-    shell.style.height = `${Math.round((constrainedHeight + frameBarHeight) * scale)}px`;
-    device.style.width = `${constrainedWidth}px`;
+    shell.style.width = `${Math.round(displayWidth * scale)}px`;
+    shell.style.height = `${Math.round((height + frameBarHeight) * scale)}px`;
+    device.style.width = `${displayWidth}px`;
     device.style.transform = `scale(${scale})`;
     device.style.transformOrigin = "center center";
-    frame.style.width = `${constrainedWidth}px`;
-    frame.style.height = `${constrainedHeight}px`;
+    viewport.style.width = `${displayWidth}px`;
+    viewport.style.height = `${height}px`;
+    frame.style.width = `${displayWidth}px`;
+    frame.style.height = `${height}px`;
+
+    const fitText = displayWidth > width ? `, fit ${displayWidth}px` : "";
     sizeLabel.textContent = scale < 1
-      ? `${constrainedWidth} x ${constrainedHeight} (${Math.round(scale * 100)}%)`
-      : `${constrainedWidth} x ${constrainedHeight}`;
-    saveResponsivePreview(constrainedWidth, constrainedHeight);
+      ? `${width} x ${height}${fitText} (${Math.round(scale * 100)}%)`
+      : `${width} x ${height}${fitText}`;
+  }
+
+  function measureResponsiveContentWidth() {
+    const frame = state.responsiveFrame;
+    const size = state.responsiveSize;
+
+    if (!frame || !size) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      try {
+        const doc = frame.contentDocument;
+        const contentWidth = Math.ceil(Math.max(
+          size.width,
+          doc?.documentElement?.scrollWidth || 0,
+          doc?.body?.scrollWidth || 0
+        ));
+        const nextDisplayWidth = Math.min(contentWidth, 2560);
+
+        if (nextDisplayWidth > size.displayWidth + 8) {
+          size.displayWidth = nextDisplayWidth;
+          applyResponsiveFrameSize();
+        }
+      } catch {
+        // Cross-origin pages cannot be measured; keep the requested viewport size.
+      }
+    }, 250);
   }
 
   function ensureResponsiveStage() {
@@ -936,7 +1019,9 @@
             <span data-responsive-size></span>
             <button class="sei-responsive-close" type="button" aria-label="Close responsive preview">&times;</button>
           </div>
-          <iframe class="sei-responsive-frame" title="Centered responsive preview"></iframe>
+          <div class="sei-responsive-viewport">
+            <iframe class="sei-responsive-frame" title="Centered responsive preview" scrolling="yes"></iframe>
+          </div>
         </div>
       </div>
     `;
@@ -945,6 +1030,7 @@
     state.responsiveStage = stage;
     state.responsiveFrame = stage.querySelector(".sei-responsive-frame");
     stage.querySelector(".sei-responsive-close").addEventListener("click", resetViewport);
+    state.responsiveFrame.addEventListener("load", measureResponsiveContentWidth);
     state.responsiveFrame.src = window.location.href;
 
     return stage;
@@ -1000,6 +1086,14 @@
   function clearResponsivePreview() {
     try {
       sessionStorage.removeItem(responsiveStorageKey);
+    } catch {
+      // Ignore storage errors from restricted pages.
+    }
+  }
+
+  function clearOldResponsivePreviewState() {
+    try {
+      oldResponsiveStorageKeys.forEach((key) => sessionStorage.removeItem(key));
     } catch {
       // Ignore storage errors from restricted pages.
     }
@@ -1073,6 +1167,7 @@
     state.responsiveStage?.remove();
     state.responsiveStage = null;
     state.responsiveFrame = null;
+    state.responsiveSize = null;
   }
 
   async function copyText(text) {
