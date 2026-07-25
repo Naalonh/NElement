@@ -1,13 +1,22 @@
 (() => {
-  if (window.__selectElementInspector?.loaded) {
+  const scriptVersion = "1.3.2";
+  const responsiveStorageKey = "NElement:responsive-preview";
+
+  if (window.__selectElementInspector?.loaded && window.__selectElementInspector.version === scriptVersion) {
     return;
   }
 
+  document.querySelectorAll(".sei-hover-box, .sei-panel, .sei-toast, .sei-responsive-stage").forEach((element) => element.remove());
+
   const state = {
     loaded: true,
+    version: scriptVersion,
     active: false,
     hoverBox: null,
     panel: null,
+    resizerPanel: null,
+    responsiveStage: null,
+    responsiveFrame: null,
     lastElement: null,
     capturing: false
   };
@@ -83,6 +92,81 @@
 
     .sei-capture-panel {
       width: min(760px, calc(100vw - 36px));
+    }
+
+    .sei-resizer-panel {
+      width: min(420px, calc(100vw - 36px));
+    }
+
+    .sei-responsive-stage {
+      position: fixed;
+      z-index: 2147483645;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      overflow: auto;
+      padding: 28px;
+      box-sizing: border-box;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(19, 196, 200, 0.12), transparent 34%),
+        linear-gradient(180deg, #f5f8fb 0%, #eaf1f6 100%);
+      font-family: Roboto, Arial, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .sei-responsive-device {
+      display: flex;
+      flex-direction: column;
+      max-width: 100%;
+      border: 1px solid rgba(0, 27, 61, 0.18);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ffffff;
+      box-shadow: 0 22px 70px rgba(0, 27, 61, 0.28);
+    }
+
+    .sei-responsive-shell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .sei-responsive-device-bar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-bottom: 1px solid #d8e7f3;
+      background: #ffffff;
+      color: #36536d;
+      font: 900 12px/1 Roboto, Arial, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .sei-responsive-frame {
+      display: block;
+      border: 0;
+      background: #ffffff;
+    }
+
+    .sei-responsive-close {
+      width: 24px;
+      height: 24px;
+      border: 1px solid #c5d9e9;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #001b3d;
+      cursor: pointer;
+      font: 900 16px/1 Roboto, Arial, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .sei-responsive-close:hover {
+      border-color: rgba(19, 196, 200, 0.45);
+      background: #effcff;
+      color: #087ecf;
     }
 
     .sei-panel * {
@@ -259,6 +343,7 @@
     .sei-actions {
       flex: 0 0 auto;
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       justify-content: flex-end;
       margin: 0;
@@ -298,8 +383,97 @@
       background: #f6fbff;
     }
 
+    .sei-resize-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .sei-preset {
+      min-width: 0;
+      min-height: 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 4px;
+      border: 1px solid #d8e7f3;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #001b3d;
+      cursor: pointer;
+      padding: 9px 10px;
+      text-align: left;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .sei-preset:hover {
+      border-color: rgba(19, 196, 200, 0.5);
+      background: #effcff;
+    }
+
+    .sei-preset strong {
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .sei-preset span {
+      display: block;
+      color: #5c6f84;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .sei-size-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .sei-field {
+      min-width: 0;
+      display: grid;
+      gap: 5px;
+    }
+
+    .sei-field span {
+      color: #36536d;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .sei-field input {
+      width: 100%;
+      min-height: 34px;
+      border: 1px solid #c5d9e9;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #071a32;
+      font: 800 12px/1 Roboto, Arial, ui-sans-serif, system-ui, sans-serif;
+      padding: 0 9px;
+    }
+
+    .sei-dimension-note {
+      margin: 0 0 12px;
+      color: #5c6f84;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
     @media (max-width: 560px) {
       .sei-row-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sei-size-form,
+      .sei-resize-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -314,6 +488,7 @@
   state.start = startPicker;
 
   document.addEventListener("keydown", onGlobalKeyDown, true);
+  restoreResponsivePreview();
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === "SELECT_ELEMENT_INSPECTOR_START") {
@@ -338,6 +513,17 @@
       }
 
       sendResponse({ ok: true, active: state.active });
+      return false;
+    }
+
+    if (message?.type === "SELECT_ELEMENT_INSPECTOR_RESIZER_TOGGLE") {
+      if (state.resizerPanel) {
+        removeResizerPanel();
+      } else {
+        showResizerPanel();
+      }
+
+      sendResponse({ ok: true, active: Boolean(state.resizerPanel) });
       return false;
     }
 
@@ -412,6 +598,19 @@
       event.preventDefault();
       event.stopPropagation();
       captureVisiblePage({ copyAfterCapture: true });
+      return;
+    }
+
+    if (key === "d") {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (state.resizerPanel) {
+        removeResizerPanel();
+      } else {
+        showResizerPanel();
+      }
+
       return;
     }
 
@@ -588,6 +787,224 @@
     placePanelNearViewportCenter(panel);
   }
 
+  function showResizerPanel() {
+    removePanel();
+    removeResizerPanel();
+    stopPicker();
+
+    const presets = [
+      { label: "Mobile", size: "390 x 844", width: 390, height: 844 },
+      { label: "Small mobile", size: "360 x 740", width: 360, height: 740 },
+      { label: "Tablet", size: "768 x 1024", width: 768, height: 1024 },
+      { label: "Laptop", size: "1280 x 800", width: 1280, height: 800 },
+      { label: "Desktop", size: "1440 x 900", width: 1440, height: 900 },
+      { label: "Wide", size: "1920 x 1080", width: 1920, height: 1080 }
+    ];
+
+    const panel = document.createElement("aside");
+    panel.className = "sei-panel sei-resizer-panel";
+    panel.innerHTML = `
+      <div class="sei-panel-header">
+        <div class="sei-heading">
+          <span class="sei-tag-badge">R</span>
+          <div>
+            <h2 class="sei-title">Responsive resize</h2>
+            <p class="sei-subtitle">Preview this page in a centered viewport.</p>
+          </div>
+        </div>
+        <button class="sei-close" type="button" aria-label="Close responsive resize">&times;</button>
+      </div>
+      <div class="sei-body">
+        <p class="sei-dimension-note">Pick a viewport size or enter a custom one. NElement opens a centered live preview of this page.</p>
+        <div class="sei-resize-grid">
+          ${presets.map(renderResizePreset).join("")}
+        </div>
+        <form class="sei-size-form">
+          <label class="sei-field">
+            <span>Width</span>
+            <input name="width" type="number" min="320" max="2560" step="1" value="${Math.round(window.innerWidth)}">
+          </label>
+          <label class="sei-field">
+            <span>Height</span>
+            <input name="height" type="number" min="480" max="1800" step="1" value="${Math.round(window.innerHeight)}">
+          </label>
+          <button class="sei-button" type="submit">Apply</button>
+        </form>
+      </div>
+      <div class="sei-actions">
+        <button class="sei-button" data-refresh-size type="button">Use current size</button>
+        <button class="sei-button" data-reset-size type="button">Reset page</button>
+      </div>
+    `;
+
+    panel.querySelector(".sei-close").addEventListener("click", removeResizerPanel);
+    panel.querySelectorAll("[data-resize-width]").forEach((button) => {
+      button.addEventListener("click", () => {
+        resizeViewport(button.dataset.resizeWidth, button.dataset.resizeHeight);
+      });
+    });
+    panel.querySelector(".sei-size-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      resizeViewport(form.elements.width.value, form.elements.height.value);
+    });
+    panel.querySelector("[data-refresh-size]").addEventListener("click", () => {
+      panel.querySelector("[name='width']").value = Math.round(window.innerWidth);
+      panel.querySelector("[name='height']").value = Math.round(window.innerHeight);
+      showToast("Current page size loaded.");
+    });
+    panel.querySelector("[data-reset-size]").addEventListener("click", resetViewport);
+
+    document.documentElement.appendChild(panel);
+    state.resizerPanel = panel;
+    placePanelNearViewportCenter(panel);
+    showToast("Responsive preview ready. Shift + D closes this panel.");
+  }
+
+  function renderResizePreset(preset) {
+    return `
+      <button class="sei-preset" type="button" data-resize-width="${preset.width}" data-resize-height="${preset.height}">
+        <strong>${escapeHtml(preset.label)}</strong>
+        <span>${escapeHtml(preset.size)}</span>
+      </button>
+    `;
+  }
+
+  function resizeViewport(width, height) {
+    const nextWidth = Number(width);
+    const nextHeight = Number(height);
+
+    if (!Number.isFinite(nextWidth) || !Number.isFinite(nextHeight)) {
+      showToast("Enter a valid width and height.");
+      return;
+    }
+
+    showResponsivePreview(Math.round(nextWidth), Math.round(nextHeight));
+
+    if (state.resizerPanel) {
+      state.resizerPanel.querySelector("[name='width']").value = Math.round(nextWidth);
+      state.resizerPanel.querySelector("[name='height']").value = Math.round(nextHeight);
+      placePanelNearViewportCenter(state.resizerPanel);
+    }
+
+    showToast(`Centered preview at ${Math.round(nextWidth)} x ${Math.round(nextHeight)}.`);
+  }
+
+  function showResponsivePreview(width, height) {
+    const stage = ensureResponsiveStage();
+    const shell = stage.querySelector(".sei-responsive-shell");
+    const device = stage.querySelector(".sei-responsive-device");
+    const frame = stage.querySelector(".sei-responsive-frame");
+    const sizeLabel = stage.querySelector("[data-responsive-size]");
+    const constrainedWidth = Math.min(width, 2560);
+    const constrainedHeight = Math.min(height, 1800);
+    const frameBarHeight = 34;
+    const stagePadding = 56;
+    const availableWidth = Math.max(window.innerWidth - stagePadding, 320);
+    const availableHeight = Math.max(window.innerHeight - stagePadding, 320);
+    const scale = Math.min(
+      1,
+      availableWidth / constrainedWidth,
+      availableHeight / (constrainedHeight + frameBarHeight)
+    );
+
+    shell.style.width = `${Math.round(constrainedWidth * scale)}px`;
+    shell.style.height = `${Math.round((constrainedHeight + frameBarHeight) * scale)}px`;
+    device.style.width = `${constrainedWidth}px`;
+    device.style.transform = `scale(${scale})`;
+    device.style.transformOrigin = "center center";
+    frame.style.width = `${constrainedWidth}px`;
+    frame.style.height = `${constrainedHeight}px`;
+    sizeLabel.textContent = scale < 1
+      ? `${constrainedWidth} x ${constrainedHeight} (${Math.round(scale * 100)}%)`
+      : `${constrainedWidth} x ${constrainedHeight}`;
+    saveResponsivePreview(constrainedWidth, constrainedHeight);
+  }
+
+  function ensureResponsiveStage() {
+    if (state.responsiveStage) {
+      return state.responsiveStage;
+    }
+
+    const stage = document.createElement("section");
+    stage.className = "sei-responsive-stage";
+    stage.innerHTML = `
+      <div class="sei-responsive-shell">
+        <div class="sei-responsive-device">
+          <div class="sei-responsive-device-bar">
+            <span>Responsive preview</span>
+            <span data-responsive-size></span>
+            <button class="sei-responsive-close" type="button" aria-label="Close responsive preview">&times;</button>
+          </div>
+          <iframe class="sei-responsive-frame" title="Centered responsive preview"></iframe>
+        </div>
+      </div>
+    `;
+
+    document.documentElement.appendChild(stage);
+    state.responsiveStage = stage;
+    state.responsiveFrame = stage.querySelector(".sei-responsive-frame");
+    stage.querySelector(".sei-responsive-close").addEventListener("click", resetViewport);
+    state.responsiveFrame.src = window.location.href;
+
+    return stage;
+  }
+
+  function resetViewport() {
+    removeResponsiveStage();
+    clearResponsivePreview();
+
+    if (state.resizerPanel) {
+      state.resizerPanel.querySelector("[name='width']").value = Math.round(window.innerWidth);
+      state.resizerPanel.querySelector("[name='height']").value = Math.round(window.innerHeight);
+      placePanelNearViewportCenter(state.resizerPanel);
+    }
+
+    showToast("Responsive preview closed.");
+  }
+
+  function restoreResponsivePreview() {
+    const saved = readResponsivePreview();
+
+    if (!saved) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      showResponsivePreview(saved.width, saved.height);
+    }, 0);
+  }
+
+  function saveResponsivePreview(width, height) {
+    try {
+      sessionStorage.setItem(responsiveStorageKey, JSON.stringify({ width, height }));
+    } catch {
+      // Some pages disable storage; preview still works for the current load.
+    }
+  }
+
+  function readResponsivePreview() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(responsiveStorageKey) || "null");
+
+      if (!saved || !Number.isFinite(saved.width) || !Number.isFinite(saved.height)) {
+        return null;
+      }
+
+      return saved;
+    } catch {
+      return null;
+    }
+  }
+
+  function clearResponsivePreview() {
+    try {
+      sessionStorage.removeItem(responsiveStorageKey);
+    } catch {
+      // Ignore storage errors from restricted pages.
+    }
+  }
+
   async function copyImage(dataUrl) {
     try {
       const blob = await (await fetch(dataUrl)).blob();
@@ -645,6 +1062,17 @@
   function removePanel() {
     state.panel?.remove();
     state.panel = null;
+  }
+
+  function removeResizerPanel() {
+    state.resizerPanel?.remove();
+    state.resizerPanel = null;
+  }
+
+  function removeResponsiveStage() {
+    state.responsiveStage?.remove();
+    state.responsiveStage = null;
+    state.responsiveFrame = null;
   }
 
   async function copyText(text) {

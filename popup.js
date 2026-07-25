@@ -1,4 +1,5 @@
 const startButton = document.getElementById("startPicker");
+const resizeButton = document.getElementById("openResizer");
 const buttonText = document.getElementById("buttonText");
 const statusText = document.getElementById("status");
 const statusDot = document.getElementById("statusDot");
@@ -32,6 +33,29 @@ startButton.addEventListener("click", async () => {
   }
 });
 
+resizeButton.addEventListener("click", async () => {
+  resizeButton.disabled = true;
+  setStatus("Opening responsive resize panel...");
+
+  try {
+    await ensureContentScript(activeTabId);
+    const response = await chrome.tabs.sendMessage(activeTabId, {
+      type: "SELECT_ELEMENT_INSPECTOR_RESIZER_TOGGLE"
+    });
+
+    if (!response?.ok) {
+      throw new Error(response?.error || "Could not open responsive resize.");
+    }
+
+    setStatus(response.active ? "Resize panel opened. Shift + D closes it." : "Resize panel closed.");
+    window.setTimeout(() => window.close(), 250);
+  } catch (error) {
+    setStatus(error.message || "Could not control responsive resize on this page.");
+  } finally {
+    resizeButton.disabled = false;
+  }
+});
+
 async function init() {
   try {
     const tab = await getActiveTab();
@@ -46,6 +70,7 @@ async function init() {
     setStatus(response?.active ? "Picker is running. Hotkey: Shift + S." : "Ready. Hotkey: Shift + S.");
   } catch (error) {
     startButton.disabled = true;
+    resizeButton.disabled = true;
     setStatus(error.message || "This page cannot run the picker.");
   }
 }

@@ -1,6 +1,6 @@
 # NElement
 
-A production-ready Chrome Manifest V3 extension for selecting visible page elements, inspecting useful frontend details, and capturing the current visible page area.
+A production-ready Chrome Manifest V3 extension for selecting visible page elements, testing responsive page sizes, inspecting useful frontend details, and capturing the current visible page area.
 
 Created by [Naalonh](https://github.com/Naalonh).
 
@@ -21,6 +21,9 @@ You can hover over a page, choose an element, and view its selector, visible tex
 - Capture the visible page area as a PNG.
 - Copy captures to the clipboard when supported by the browser/page.
 - Download captures as `web-page-capture.png`.
+- Preview the current page in a centered responsive frame.
+- Use responsive presets for mobile, tablet, laptop, desktop, and wide layouts.
+- Apply a custom width and height without opening DevTools.
 - Use keyboard shortcuts for fast repeated workflows.
 - Lightweight Manifest V3 implementation with no build step.
 
@@ -31,6 +34,7 @@ You can hover over a page, choose an element, and view its selector, visible tex
 | `Shift + S` | Start or stop element selection |
 | `Shift + E` | Select another element after inspecting one |
 | `Shift + R` | Capture the visible page area and copy it automatically |
+| `Shift + D` | Open or close the responsive resize panel |
 | `Esc` | Cancel selection while the picker is active |
 
 ## Installation
@@ -58,6 +62,21 @@ After loading it, open any normal web page and click the extension icon.
 7. Use `Copy selector`, `Copy JSON`, or `Capture page` as needed.
 
 To inspect another element, press `Shift + E` or start the picker again from the popup.
+
+## Responsive Resize
+
+Open the responsive resize panel from the popup or press `Shift + D` on the page.
+
+The panel includes common size presets:
+
+- Mobile: `390 x 844`
+- Small mobile: `360 x 740`
+- Tablet: `768 x 1024`
+- Laptop: `1280 x 800`
+- Desktop: `1440 x 900`
+- Wide: `1920 x 1080`
+
+You can also enter a custom width and height, then click `Apply`. NElement opens a centered live preview frame of the current page so the layout reflows at that size without resizing Chrome or opening DevTools.
 
 ## Capture Workflow
 
@@ -107,7 +126,7 @@ The extension does not send inspected page data to an external server. Inspectio
 |-- assets/          Extension icons and logo image
 |-- fonts/           Local Roboto font files used by the popup and overlay
 |-- background.js    Service worker for visible tab capture
-|-- content.js       In-page picker, inspector panel, capture preview, and shortcuts
+|-- content.js       In-page picker, responsive resize, inspector panel, capture preview, and shortcuts
 |-- manifest.json    Chrome Manifest V3 configuration
 |-- popup.css        Popup UI styles
 |-- popup.html       Extension popup markup
