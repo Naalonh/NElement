@@ -61,7 +61,7 @@ function emulateViewport(tabId, width, height, sendResponse) {
         width,
         height,
         deviceScaleFactor: 1,
-        mobile: width <= 768,
+        mobile: width < 600,
         screenWidth: width,
         screenHeight: height
       },
@@ -71,7 +71,7 @@ function emulateViewport(tabId, width, height, sendResponse) {
           return;
         }
 
-        sendResponse({ ok: true, width, height });
+        sendResponse({ ok: true, width, height, mobile: width < 600 });
       }
     );
   });

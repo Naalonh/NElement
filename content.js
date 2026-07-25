@@ -3,7 +3,7 @@
     return;
   }
 
-  const scriptVersion = "1.4.1";
+  const scriptVersion = "1.4.2";
   const oldResponsiveStorageKeys = [
     "NElement:responsive-preview",
     "NElement:responsive-preview:v2",
@@ -831,7 +831,7 @@
         placePanelNearViewportCenter(state.resizerPanel);
       }
 
-      showToast(`Viewport set to ${response.width} x ${response.height}.`);
+      showToast(`${response.mobile ? "Mobile" : "Viewport"} set to ${response.width} x ${response.height}.`);
     } catch (error) {
       showToast(error.message || "Could not resize this viewport.");
     }
