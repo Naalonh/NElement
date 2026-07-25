@@ -3,11 +3,11 @@
     return;
   }
 
-  const scriptVersion = "1.3.6";
-  const responsiveStorageKey = "NElement:responsive-preview:v3";
+  const scriptVersion = "1.4.0";
   const oldResponsiveStorageKeys = [
     "NElement:responsive-preview",
-    "NElement:responsive-preview:v2"
+    "NElement:responsive-preview:v2",
+    "NElement:responsive-preview:v3"
   ];
 
   if (window.__selectElementInspector?.loaded && window.__selectElementInspector.version === scriptVersion) {
@@ -23,9 +23,6 @@
     hoverBox: null,
     panel: null,
     resizerPanel: null,
-    responsiveStage: null,
-    responsiveFrame: null,
-    responsiveSize: null,
     lastElement: null,
     capturing: false
   };
@@ -105,98 +102,6 @@
 
     .sei-resizer-panel {
       width: min(420px, calc(100vw - 36px));
-    }
-
-    .sei-responsive-stage {
-      position: fixed;
-      z-index: 2147483645;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      overflow: auto;
-      padding: 28px;
-      box-sizing: border-box;
-      background:
-        radial-gradient(circle at 50% 18%, rgba(19, 196, 200, 0.12), transparent 34%),
-        linear-gradient(180deg, #f5f8fb 0%, #eaf1f6 100%);
-      font-family: Roboto, Arial, ui-sans-serif, system-ui, sans-serif;
-    }
-
-    .sei-responsive-device {
-      display: flex;
-      flex-direction: column;
-      max-width: 100%;
-      border: 1px solid rgba(0, 27, 61, 0.18);
-      border-radius: 8px;
-      overflow: hidden;
-      background: #ffffff;
-      box-shadow: 0 22px 70px rgba(0, 27, 61, 0.28);
-    }
-
-    .sei-responsive-viewport {
-      overflow: auto;
-      background: #ffffff;
-      scrollbar-width: thin;
-      scrollbar-color: #13c4c8 #edf4f8;
-    }
-
-    .sei-responsive-viewport::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-    }
-
-    .sei-responsive-viewport::-webkit-scrollbar-thumb {
-      border-radius: 999px;
-      background: #13c4c8;
-    }
-
-    .sei-responsive-viewport::-webkit-scrollbar-track {
-      background: #edf4f8;
-    }
-
-    .sei-responsive-shell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      max-width: 100%;
-      max-height: 100%;
-    }
-
-    .sei-responsive-device-bar {
-      flex: 0 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      min-height: 34px;
-      padding: 0 12px;
-      border-bottom: 1px solid #d8e7f3;
-      background: #ffffff;
-      color: #36536d;
-      font: 900 12px/1 Roboto, Arial, ui-sans-serif, system-ui, sans-serif;
-    }
-
-    .sei-responsive-frame {
-      display: block;
-      border: 0;
-      background: #ffffff;
-    }
-
-    .sei-responsive-close {
-      width: 24px;
-      height: 24px;
-      border: 1px solid #c5d9e9;
-      border-radius: 8px;
-      background: #ffffff;
-      color: #001b3d;
-      cursor: pointer;
-      font: 900 16px/1 Roboto, Arial, ui-sans-serif, system-ui, sans-serif;
-    }
-
-    .sei-responsive-close:hover {
-      border-color: rgba(19, 196, 200, 0.45);
-      background: #effcff;
-      color: #087ecf;
     }
 
     .sei-panel * {
@@ -519,7 +424,6 @@
 
   document.addEventListener("keydown", onGlobalKeyDown, true);
   clearOldResponsivePreviewState();
-  restoreResponsivePreview();
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === "SELECT_ELEMENT_INSPECTOR_START") {
@@ -841,13 +745,13 @@
           <span class="sei-tag-badge">R</span>
           <div>
             <h2 class="sei-title">Responsive resize</h2>
-            <p class="sei-subtitle">Preview this page in a centered viewport.</p>
+            <p class="sei-subtitle">Resize this tab viewport without DevTools.</p>
           </div>
         </div>
         <button class="sei-close" type="button" aria-label="Close responsive resize">&times;</button>
       </div>
       <div class="sei-body">
-        <p class="sei-dimension-note">Pick a viewport size or enter a custom one. NElement opens a centered live preview of this page.</p>
+        <p class="sei-dimension-note">Pick a viewport size or enter a custom one. Chrome will emulate that viewport for the active tab.</p>
         <div class="sei-resize-grid">
           ${presets.map(renderResizePreset).join("")}
         </div>
@@ -890,7 +794,7 @@
     document.documentElement.appendChild(panel);
     state.resizerPanel = panel;
     placePanelNearViewportCenter(panel);
-    showToast("Responsive preview ready. Shift + D closes this panel.");
+    showToast("Viewport resize ready. Shift + D closes this panel.");
   }
 
   function renderResizePreset(preset) {
@@ -902,7 +806,7 @@
     `;
   }
 
-  function resizeViewport(width, height) {
+  async function resizeViewport(width, height) {
     const nextWidth = Number(width);
     const nextHeight = Number(height);
 
@@ -911,183 +815,48 @@
       return;
     }
 
-    showResponsivePreview(Math.round(nextWidth), Math.round(nextHeight));
-
-    if (state.resizerPanel) {
-      state.resizerPanel.querySelector("[name='width']").value = Math.round(nextWidth);
-      state.resizerPanel.querySelector("[name='height']").value = Math.round(nextHeight);
-      placePanelNearViewportCenter(state.resizerPanel);
-    }
-
-    showToast(`Centered preview at ${Math.round(nextWidth)} x ${Math.round(nextHeight)}.`);
-  }
-
-  function showResponsivePreview(width, height) {
-    const stage = ensureResponsiveStage();
-    const constrainedWidth = Math.min(width, 2560);
-    const constrainedHeight = Math.min(height, 1800);
-
-    state.responsiveSize = {
-      width: constrainedWidth,
-      height: constrainedHeight,
-      displayWidth: constrainedWidth
-    };
-
-    applyResponsiveFrameSize();
-    saveResponsivePreview(constrainedWidth, constrainedHeight);
-    measureResponsiveContentWidth();
-  }
-
-  function applyResponsiveFrameSize() {
-    if (!state.responsiveStage || !state.responsiveSize) {
-      return;
-    }
-
-    const { width, height, displayWidth } = state.responsiveSize;
-    const stage = state.responsiveStage;
-    const shell = stage.querySelector(".sei-responsive-shell");
-    const device = stage.querySelector(".sei-responsive-device");
-    const viewport = stage.querySelector(".sei-responsive-viewport");
-    const frame = stage.querySelector(".sei-responsive-frame");
-    const sizeLabel = stage.querySelector("[data-responsive-size]");
-    const frameBarHeight = 34;
-    const stagePadding = 56;
-    const availableWidth = Math.max(window.innerWidth - stagePadding, 320);
-    const availableHeight = Math.max(window.innerHeight - stagePadding, 320);
-    const scale = Math.min(
-      1,
-      availableWidth / displayWidth,
-      availableHeight / (height + frameBarHeight)
-    );
-
-    shell.style.width = `${Math.round(displayWidth * scale)}px`;
-    shell.style.height = `${Math.round((height + frameBarHeight) * scale)}px`;
-    device.style.width = `${displayWidth}px`;
-    device.style.transform = `scale(${scale})`;
-    device.style.transformOrigin = "center center";
-    viewport.style.width = `${displayWidth}px`;
-    viewport.style.height = `${height}px`;
-    frame.style.width = `${displayWidth}px`;
-    frame.style.height = `${height}px`;
-
-    const fitText = displayWidth > width ? `, fit ${displayWidth}px` : "";
-    sizeLabel.textContent = scale < 1
-      ? `${width} x ${height}${fitText} (${Math.round(scale * 100)}%)`
-      : `${width} x ${height}${fitText}`;
-  }
-
-  function measureResponsiveContentWidth() {
-    const frame = state.responsiveFrame;
-    const size = state.responsiveSize;
-
-    if (!frame || !size) {
-      return;
-    }
-
-    window.setTimeout(() => {
-      try {
-        const doc = frame.contentDocument;
-        const contentWidth = Math.ceil(Math.max(
-          size.width,
-          doc?.documentElement?.scrollWidth || 0,
-          doc?.body?.scrollWidth || 0
-        ));
-        const nextDisplayWidth = Math.min(contentWidth, 2560);
-
-        if (nextDisplayWidth > size.displayWidth + 8) {
-          size.displayWidth = nextDisplayWidth;
-          applyResponsiveFrameSize();
-        }
-      } catch {
-        // Cross-origin pages cannot be measured; keep the requested viewport size.
-      }
-    }, 250);
-  }
-
-  function ensureResponsiveStage() {
-    if (state.responsiveStage) {
-      return state.responsiveStage;
-    }
-
-    const stage = document.createElement("section");
-    stage.className = "sei-responsive-stage";
-    stage.innerHTML = `
-      <div class="sei-responsive-shell">
-        <div class="sei-responsive-device">
-          <div class="sei-responsive-device-bar">
-            <span>Responsive preview</span>
-            <span data-responsive-size></span>
-            <button class="sei-responsive-close" type="button" aria-label="Close responsive preview">&times;</button>
-          </div>
-          <div class="sei-responsive-viewport">
-            <iframe class="sei-responsive-frame" title="Centered responsive preview" scrolling="yes"></iframe>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.documentElement.appendChild(stage);
-    state.responsiveStage = stage;
-    state.responsiveFrame = stage.querySelector(".sei-responsive-frame");
-    stage.querySelector(".sei-responsive-close").addEventListener("click", resetViewport);
-    state.responsiveFrame.addEventListener("load", measureResponsiveContentWidth);
-    state.responsiveFrame.src = window.location.href;
-
-    return stage;
-  }
-
-  function resetViewport() {
-    removeResponsiveStage();
-    clearResponsivePreview();
-
-    if (state.resizerPanel) {
-      state.resizerPanel.querySelector("[name='width']").value = Math.round(window.innerWidth);
-      state.resizerPanel.querySelector("[name='height']").value = Math.round(window.innerHeight);
-      placePanelNearViewportCenter(state.resizerPanel);
-    }
-
-    showToast("Responsive preview closed.");
-  }
-
-  function restoreResponsivePreview() {
-    const saved = readResponsivePreview();
-
-    if (!saved) {
-      return;
-    }
-
-    window.setTimeout(() => {
-      showResponsivePreview(saved.width, saved.height);
-    }, 0);
-  }
-
-  function saveResponsivePreview(width, height) {
     try {
-      sessionStorage.setItem(responsiveStorageKey, JSON.stringify({ width, height }));
-    } catch {
-      // Some pages disable storage; preview still works for the current load.
-    }
-  }
+      const response = await chrome.runtime.sendMessage({
+        type: "SELECT_ELEMENT_INSPECTOR_RESIZE_VIEWPORT",
+        width: nextWidth,
+        height: nextHeight
+      });
 
-  function readResponsivePreview() {
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(responsiveStorageKey) || "null");
-
-      if (!saved || !Number.isFinite(saved.width) || !Number.isFinite(saved.height)) {
-        return null;
+      if (!response?.ok) {
+        throw new Error(response?.error || "Viewport resize failed.");
       }
 
-      return saved;
-    } catch {
-      return null;
+      if (state.resizerPanel) {
+        state.resizerPanel.querySelector("[name='width']").value = response.width;
+        state.resizerPanel.querySelector("[name='height']").value = response.height;
+        placePanelNearViewportCenter(state.resizerPanel);
+      }
+
+      showToast(`Viewport set to ${response.width} x ${response.height}.`);
+    } catch (error) {
+      showToast(error.message || "Could not resize this viewport.");
     }
   }
 
-  function clearResponsivePreview() {
+  async function resetViewport() {
     try {
-      sessionStorage.removeItem(responsiveStorageKey);
-    } catch {
-      // Ignore storage errors from restricted pages.
+      const response = await chrome.runtime.sendMessage({
+        type: "SELECT_ELEMENT_INSPECTOR_RESET_VIEWPORT"
+      });
+
+      if (!response?.ok) {
+        throw new Error(response?.error || "Reset failed.");
+      }
+
+      if (state.resizerPanel) {
+        state.resizerPanel.querySelector("[name='width']").value = Math.round(window.innerWidth);
+        state.resizerPanel.querySelector("[name='height']").value = Math.round(window.innerHeight);
+        placePanelNearViewportCenter(state.resizerPanel);
+      }
+
+      showToast("Viewport reset.");
+    } catch (error) {
+      showToast(error.message || "Could not reset viewport.");
     }
   }
 
@@ -1161,13 +930,6 @@
   function removeResizerPanel() {
     state.resizerPanel?.remove();
     state.resizerPanel = null;
-  }
-
-  function removeResponsiveStage() {
-    state.responsiveStage?.remove();
-    state.responsiveStage = null;
-    state.responsiveFrame = null;
-    state.responsiveSize = null;
   }
 
   async function copyText(text) {

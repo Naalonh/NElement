@@ -21,7 +21,7 @@ You can hover over a page, choose an element, and view its selector, visible tex
 - Capture the visible page area as a PNG.
 - Copy captures to the clipboard when supported by the browser/page.
 - Download captures as `web-page-capture.png`.
-- Preview the current page in a centered responsive frame.
+- Resize the active tab viewport with Chrome viewport emulation.
 - Use responsive presets for mobile, tablet, laptop, desktop, and wide layouts.
 - Apply a custom width and height without opening DevTools.
 - Use keyboard shortcuts for fast repeated workflows.
@@ -77,7 +77,7 @@ The panel includes common size presets:
 - Desktop: `1440 x 900`
 - Wide: `1920 x 1080`
 
-You can also enter a custom width and height, then click `Apply`. NElement opens a centered live preview frame of the current page so the layout reflows at that size without resizing Chrome or opening DevTools.
+You can also enter a custom width and height, then click `Apply`. NElement uses Chrome viewport emulation so the active page reflows at that size without opening DevTools.
 
 ## Capture Workflow
 
@@ -116,6 +116,7 @@ The extension uses the following permissions:
 - `activeTab`: allows the extension to interact with the active tab after user action.
 - `scripting`: injects the content script when the popup controls the picker.
 - `tabs`: supports active tab lookup and visible tab capture.
+- `debugger`: allows the responsive resize panel to emulate viewport sizes on the active tab.
 - `<all_urls>` host permission: lets the inspector run on regular websites.
 
 The extension does not send inspected page data to an external server. Inspection data stays in the browser page and clipboard actions only happen when you click a copy button or use the capture shortcut.

@@ -23,7 +23,7 @@ NElement requests browser permissions only for its core purpose:
 - Inspecting page elements on websites where the user activates the extension.
 - Injecting the local inspector interface into the active page.
 - Capturing the visible area of the active tab when requested by the user.
-- Showing a centered responsive preview frame when the user chooses a preset or custom size.
+- Emulating the active tab viewport when the user chooses a responsive preset or custom size.
 
 ## Contact
 
